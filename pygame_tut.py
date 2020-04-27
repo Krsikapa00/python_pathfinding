@@ -40,8 +40,6 @@ class Node():
         self.g = 0
         self.h = 0
         self.f = 0
-    def __eq__(self, other):
-        self.position == other.position
 
 class grid_space():
     # start_end, 0 means normal space, 1 mean start, 2 means end
@@ -108,7 +106,6 @@ def highlight_space(new_space, colour):
         if space.x == new_space[0] and space.y == new_space[1]:
             space.colour = colour
 
-
 def create_path(node):
     current_space = node
     while current_space is not None:
@@ -125,7 +122,6 @@ def update_screen(fps=60):
     pygame.draw.rect(SCREEN, start_space.colour,
                      (start_space.x, start_space.y, SIDE_LENGTH, SIDE_LENGTH))
     pygame.draw.rect(SCREEN, end_space.colour, (end_space.x, end_space.y, SIDE_LENGTH, SIDE_LENGTH))
-
     pygame.display.flip()
     pygame.time.delay(fps)
 
@@ -150,75 +146,22 @@ def create_children(current_space):
         children.append(new_node)
     return children
 
-
-# Check both the current closed and open lists and add a valid space to each spot that has not been checked yet
-def add_layer():
-    # is_stuck is for when must have to add layer around all possible options
-    valid_spaces = open_list
-    for closed_node in closed_list:
-        valid_spaces.append(closed_node)
-    valid_spaces.sort(key=lambda x: x.g)
-    new_open_list = []
-    # Open space is the current spot and new_child is the potential child
-    for open_space in valid_spaces:
-
-        closed_list.append(open_space)
-        highlight_space(open_space.position, TEAL)
-        new_children = create_children(open_space)
-
-        for new_child in new_children:
-        #     if (new_child.position[0] == end_space.x and new_child.position[1] == end_space.y):
-        #         create_path(new_child)
-        #         animation = False
-        #         break
-
-            in_closed_list = False
-            for node in closed_list:
-                if new_child.position == node.position:
-                    in_closed_list = True
-            if in_closed_list:
-                continue
-            # G is the distance of the path of the parents
-            new_child.g = (open_space.g + 1)
-            new_child.h = ((end_node.position[0]-new_child.position[0])**2 +
-                           (end_node.position[1] - new_child.position[1])**2)
-            new_child.f = new_child.g + new_child.h
-
-            # If the new space is already an available spot with a shorter path
-            # to the starting point, replace it
-            in_open_list = False
-            for node in valid_spaces:
-                if new_child.position == node.position:
-                    if new_child.g < node.g:
-                        node.g = new_child.g
-                        node.parent = new_child.parent
-                        node.f = new_child.f
-                    else:
-                        in_open_list = True
-            if in_open_list:
-                continue
-            highlight_space(new_child.position, PINK)
-            new_open_list.append(new_child)
-
-
-            update_screen(200)
-    return new_open_list
-
 def check_closed_list(child):
     for closed_node in closed_list:
         if child.position == closed_node.position:
-            if closed_node.g <= child.g:
-                return True
-            open_list.append(closed_node)
-            closed_list.remove(closed_node)
+            # if closed_node.g <= child.g:
+            #     return True
+            # open_list.append(closed_node)
+            # closed_list.remove(closed_node)
+            return True
     return False
 
 def check_open_list(child):
     for open_node in open_list:
         if child.position == open_node.position:
-            if open_node.g > child.g:
-                open_node.g = child.g
-                open_node.parent = child.g
+            # if open_node.g > child.g:
+            #     open_node.g = child.g
+            #     open_node.parent = child.g
             return True
     return False
 
@@ -306,59 +249,30 @@ while main:
         current_node = open_list[0]
         current_index = 0
         for index, node in enumerate(open_list):
-            if node.f < current_node.f:
+            if node.f <= current_node.f:
                 current_node = node
                 current_index = index
+        if (current_node.position[0] == end_space.x and current_node.position[1] == end_space.y):
+            create_path(current_node)
+            animation = False
+            continue
 
         open_list.remove(current_node)
         highlight_space(current_node.position, BLUE)
         children_list = create_children(current_node)
 
         # If even one of the new spaces ends up being valid and added then it will turn true
-        is_child_added = False
         for child in children_list:
             if (child.position[0] == end_space.x and child.position[1] == end_space.y):
                 create_path(child)
                 animation = False
-                is_child_added = True
                 break
             # # G is the distance of the path of the parents
-            child.g = (current_node.g + 1)
-            # child.h = ((abs(end_node.position[0]-child.position[0])) +
-            #            (abs(end_node.position[1] - child.position[1])))
-            # child.f = child.g + child.h
+            child.g = (current_node.g + SIDE_LENGTH)
+            child.h = ((abs(end_node.position[0]-child.position[0])) +
+                       (abs(end_node.position[1] - child.position[1])))
 
-            # if path has to move backwards add a layer of open nodes to the current ones
-            # run the Breadth algorithm one time around then proceed with the A* algorithm
-            # if child.f > current_node.f and current_node.position is not start_node.position:
-            #     continue
-
-            # in_open_list = False
-            # for node in open_list:
-            #     if child.position == node.position and node.g <= child.g:
-            #         # if child.g <= node.g:
-            #         #     node.g = child.g
-            #         #     node.parent = child.parent
-            #         # else:
-            #         in_open_list = True
-            #         break
-            # if in_open_list:
-            #     continue
-            # in_closed_list = False
-            # for node in closed_list:
-            #     if child.position == node.position:
-            #         if node.g > child.g:
-            #             open_list.append(node)
-            #             closed_list.remove(node)
-            #         in_closed_list = True
-            #         break
-            # if in_closed_list:
-            #     continue
-
-
-            # If the new space is already an available spot with a shorter path
-            # to the starting point, replace it
-
+            child.f = child.g + child.h
 
             if check_open_list(child):
                 continue
@@ -367,19 +281,9 @@ while main:
             else:
                 highlight_space(child.position, PINK)
                 open_list.append(child)
-                is_child_added = True
+                # print(child.g, "  ", child.h, "  ", child.f)
 
         closed_list.append(current_node)
-
-            # is_child_added = True
-
-        # if not is_child_added or len(open_list) == 0:
-        #     print("RUNNN")
-        #     print(" ")
-        #     open_list.append(current_node)
-        #     # Adds a layer of valid spaces to the existing ones
-        #     open_list = add_layer()
-
 
     elif len(open_list) == 0:
         print("NO PATH")
